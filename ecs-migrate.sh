@@ -73,7 +73,7 @@ else
 	exit
 fi
 
-echo -e "\n Here are the files to upload: "
+echo -e "\nHere are the files to upload: "
 
 readarray -t dirs <<< "$( $s3cmd ls $bucket | sed 's/.*s3:/s3:/' )"
 for dir in "${dirs[@]}" ; do
@@ -91,7 +91,13 @@ read -p "Either type A for all files, or select a number to upload individually:
 if [ "$up_sel" == "A" ]; then 
 	echo "upload it all!"
 	CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log
+else
+	echo "Uploading ${dirs[$up_sel]}...."
+	dir_clean="$( echo ${bucks[$num_sel]} | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+	CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r ${dirs[$up_sel]} gs://broad-ecs-$dir_clean
 fi
+
+
 
 
 #if [ $result -eq 1 ]; then
