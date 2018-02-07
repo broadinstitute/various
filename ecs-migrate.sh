@@ -1,7 +1,7 @@
 #!/bin/bash
 
 threads=8
-log="/broad/stops/ecs-migration/logs/$dir.log"
+log_dir="/broad/stops/ecs-migration/logs"
 s3cmd='/home/unix/daltschu/git/archive-cli/s3cmd/s3cmd -c /home/unix/daltschu/git/archive-cli/.s3cfg_osarchive'
 project='broad-archive-legacy'
 gsutil='/home/unix/daltschu/google-cloud-sdk/bin/gsutil'
@@ -55,8 +55,9 @@ do
 	fi
 done
 
-bucket=${bucks[$num_sel]}
-bucket_clean="$( echo $bucket | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+bucket="$( echo ${bucks[$num_sel]} )"
+bucket_lower="$( echo $bucket | tr "[:upper:]" "[:lower:]" )"
+bucket_clean="$( echo $bucket_lower | sed s'|s3://||' )"
 
 echo -e "\nYou chose $bucket \n"
 
@@ -67,7 +68,7 @@ GetYN
 num2=0
 if [ $result -eq 1 ]; then
 	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
-	CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://$bucket_clean
+	CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean
 else
 	exit
 fi
@@ -89,6 +90,7 @@ read -p "Either type A for all files, or select a number to upload individually:
 
 if [ "$up_sel" == "A" ]; then 
 	echo "upload it all!"
+	CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log
 fi
 
 
