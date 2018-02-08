@@ -50,6 +50,7 @@ S3_List(){
 echo -e "\nPlease select a bucket by number:\n"
 S3_List
 echo ""
+
 read -p "Which bucket:" num_sel
 
 until [ "$num_sel" -le "${#dirs[@]}" ]
@@ -80,16 +81,7 @@ fi
 
 echo -e "\nHere are the files to upload: "
 
-readarray -t dirs <<< "$( $s3cmd ls $bucket | sed 's/.*s3:/s3:/' )"
-for dir in "${dirs[@]}" ; do
-	if [ $num2 -eq 0 ]; then
-		echo "0 - $dir"
-                num2=$((num2+1))
-	else
-		echo "$num2 - $dir"
-		num2=$((num2+1))
-	fi
-done
+S3_List($bucket)
 
 read -p "Either type A for all files, or select a number to select a subdir: " up_sel
 
