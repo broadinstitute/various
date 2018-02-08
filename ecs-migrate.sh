@@ -118,18 +118,3 @@ else
 	fi
 			 
 fi	
-
-
-
-
-
-#	echo "Uploading ${dirs[$up_sel]}...."
-#	dir_clean="$( echo ${bucks[$num_sel]} | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
-#	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
-#	BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r ${dirs[$up_sel]} gs://broad-ecs-$dir_clean
-#fi
-
-
-#if [ $result -eq 1 ]; then
-#	echo "CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket gs://broad-ecs-$dir/"
-#fi
