@@ -33,6 +33,7 @@ GetYN() {
         done
 }
 
+#Lists directories in an s3 path
 S3_List(){
     num=0
     readarray -t dirs <<< "$( $s3cmd ls $1 | sed 's/.*s3:/s3:/' )"
@@ -47,6 +48,7 @@ S3_List(){
     done
 }
 
+#loops directories in the array returned from S3_List, then uploads each one.
 Upload(){
     for dir in "${dirs[@]}"; do
         #CLOUDSDK_CONFIG=$CONFIG_FOLDER
@@ -59,13 +61,15 @@ Upload(){
     done
 }
 
-#Read in bucket listing to array
+#Displays top level buckets
 echo -e "\nPlease select a bucket by number:\n"
 S3_List
 echo ""
 
+#Asks user to pick bucket
 read -p "Which bucket:" num_sel
 
+#Pick an in bound number
 until [ "$num_sel" -le "${#dirs[@]}" ]
 do
 	if [ "$num_sel" -gt "${#dirs[@]}" ]; then
@@ -83,6 +87,7 @@ echo -e "\nYou chose $bucket \n"
 echo -e "Would you like to make a google bucket (if one doesnt exist) and then drill down?"
 GetYN
 
+#Makes a bucket in gsutil with the same name as in ECS but lowercase
 num2=0
 if [ $result -eq 1 ]; then
 	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
@@ -92,13 +97,14 @@ else
 	exit
 fi
 
+#List the files inside the bucket you selected
 echo -e "\nHere are the files to upload: "
-
 S3_List $bucket
 
 read -p "Either type A for all files, or select a number to drill down into a subdir: " up_sel
 
 if [ "$up_sel" == "A" ]; then
+	#Loops through the directories in the first level of the bucket and uploads each
 	echo "Uploading all files..."
 	Upload $dirs
 else
@@ -109,6 +115,7 @@ else
 	result=0
 	GetYN
 	if [ $result=1 ]; then
+		#Drill down one level and do the same as above
 		Upload $dirs
 	else
 		echo "exiting"
