@@ -46,5 +46,70 @@ S3_List(){
     done
 }
 
+#Read in bucket listing to array
+echo -e "\nPlease select a bucket by number:\n"
 S3_List
-printf '%s\n' "${dirs[@]}"
+echo ""
+read -p "Which bucket:" num_sel
+
+until [ "$num_sel" -le "${#dirs[@]}" ]
+do
+	if [ "$num_sel" -gt "${#dirs[@]}" ]; then
+		echo -e "not a valid bucket!\n"
+		read -p "Which bucket:" num_sel
+	fi
+done
+
+bucket="$( echo ${dirs[$num_sel]} )"
+bucket_lower="$( echo $bucket | tr "[:upper:]" "[:lower:]" )"
+bucket_clean="$( echo $bucket_lower | sed s'|s3://||' )"
+
+echo -e "\nYou chose $bucket \n"
+
+echo -e "Would you like to make a google bucket (if one doesnt exist) and then drill down?"
+GetYN
+
+num2=0
+if [ $result -eq 1 ]; then
+	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
+	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
+	BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean
+else
+	exit
+fi
+
+echo -e "\nHere are the files to upload: "
+
+readarray -t dirs <<< "$( $s3cmd ls $bucket | sed 's/.*s3:/s3:/' )"
+for dir in "${dirs[@]}" ; do
+	if [ $num2 -eq 0 ]; then
+		echo "0 - $dir"
+                num2=$((num2+1))
+	else
+		echo "$num2 - $dir"
+		num2=$((num2+1))
+	fi
+done
+
+read -p "Either type A for all files, or select a number to select a subdir: " up_sel
+
+if [ "$up_sel" == "A" ]; then
+	echo "upload it all!"
+	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
+	BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log
+else
+
+
+
+#	echo "Uploading ${dirs[$up_sel]}...."
+#	dir_clean="$( echo ${bucks[$num_sel]} | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+#	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
+#	BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r ${dirs[$up_sel]} gs://broad-ecs-$dir_clean
+#fi
+
+
+
+
+#if [ $result -eq 1 ]; then
+#	echo "CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket gs://broad-ecs-$dir/"
+#fi
