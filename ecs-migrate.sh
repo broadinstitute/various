@@ -87,7 +87,7 @@ S3_List $bucket
 read -p "Either type A for all files, or select a number to drill down into a subdir: " up_sel
 
 if [ "$up_sel" == "A" ]; then
-	echo "upload it all BABY!"
+	echo "Uploading all files..."
 	for dir in "${dirs[@]}"; do
 		#CLOUDSDK_CONFIG=$CONFIG_FOLDER
 		sub_dir=$dir
@@ -113,7 +113,7 @@ else
 			echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
 		done
 	else
-		echo "gtfo then!"
+		echo "exiting"
 		exit
 	fi
 			 
