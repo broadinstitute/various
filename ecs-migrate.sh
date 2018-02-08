@@ -47,6 +47,18 @@ S3_List(){
     done
 }
 
+Upload(){
+    for dir in "${dirs[@]}"; do
+        #CLOUDSDK_CONFIG=$CONFIG_FOLDER
+        sub_dir=$dir
+        sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+        sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
+        echo "mkdir -p $log_dir/$sub_dir_clean"
+        #echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"i
+        echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
+    done
+}
+
 #Read in bucket listing to array
 echo -e "\nPlease select a bucket by number:\n"
 S3_List
@@ -88,15 +100,7 @@ read -p "Either type A for all files, or select a number to drill down into a su
 
 if [ "$up_sel" == "A" ]; then
 	echo "Uploading all files..."
-	for dir in "${dirs[@]}"; do
-		#CLOUDSDK_CONFIG=$CONFIG_FOLDER
-		sub_dir=$dir
-         	sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
-		sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
-		mkdir -p $log_dir/$sub_dir_clean
-		#echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"i
-		echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
-	done
+	Upload $dirs
 else
 	sub_dir=${dirs[$up_sel]}
 	echo "The list of files inside $sub_dir is:"
@@ -105,16 +109,10 @@ else
 	result=0
 	GetYN
 	if [ $result=1 ]; then
-		for dir in "${dirs[@]}" ; do
-			sub_dir=$dir
-			sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
-			sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
-			mkdir -p $log_dir/$sub_dir_clean
-			echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
-		done
+		Upload $dirs
 	else
 		echo "exiting"
 		exit
 	fi
-			 
-fi	
+
+fi
