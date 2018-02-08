@@ -44,4 +44,8 @@ S3_List(){
     		num=$((num+1))
     	fi
     done
+    return $dirs
 }
+
+S3_List
+echo "Array is $dirs"
