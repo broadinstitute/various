@@ -9,6 +9,7 @@ log_dir="/broad/stops/ecs-migration/logs"
 s3cmd='/home/unix/daltschu/git/archive-cli/s3cmd/s3cmd -c /home/unix/daltschu/git/archive-cli/.s3cfg_osarchive'
 project='broad-archive-legacy'
 gsutil='/home/unix/daltschu/google-cloud-sdk/bin/gsutil'
+bucket=
 
 #Location of boto file that contains credentials for ecs and google.
 BOTOFILE=/broad/stops/ecs-migration/.boto_ecs
@@ -16,7 +17,7 @@ BOTOFILE=/broad/stops/ecs-migration/.boto_ecs
 #Using this cloud sdk config folder DOESNT WORK. Just use the boto.
 CONFIG_FOLDER=/broad/stops/ecs-migration/
 
-eval export DK_ROOT="/broad/software/dotkit"; . /broad/software/dotkit/ksh/.dk_init 
+eval export DK_ROOT="/broad/software/dotkit"; . /broad/software/dotkit/ksh/.dk_init
 use -q Google-Cloud-SDK
 use -q Python-2.7
 
@@ -32,35 +33,36 @@ GetYN() {
         done
 }
 
+S3_List(){
+    num=0
+    readarray -t dirs <<< "$( $s3cmd ls $1 | sed 's/.*s3:/s3:/' )"
+    for dir in "${dirs[@]}" ; do
+    	if [ $num -eq 0 ]; then
+    		echo "0 - $dir"
+                    num=$((num+1))
+    	else
+    		echo "$num - $dir"
+    		num=$((num+1))
+    	fi
+    done
+}
+
 #Read in bucket listing to array
-readarray -t bucks <<< "$( $s3cmd ls | sed 's/.*s3:/s3:/' )"
-
 echo -e "\nPlease select a bucket by number:\n"
-
-num=0
-for buck in "${bucks[@]}" ; do
-	if [ $num -eq 0 ]; then
-		echo "0 - $buck"
-		num=$((num+1))
-	else
-		echo "$num - $buck"
-		num=$((num+1))
-	fi
-done
-
+S3_List
 echo ""
 
 read -p "Which bucket:" num_sel
 
-until [ "$num_sel" -le "${#bucks[@]}" ]
+until [ "$num_sel" -le "${#dirs[@]}" ]
 do
-	if [ "$num_sel" -gt "${#bucks[@]}" ]; then
+	if [ "$num_sel" -gt "${#dirs[@]}" ]; then
 		echo -e "not a valid bucket!\n"
 		read -p "Which bucket:" num_sel
 	fi
 done
 
-bucket="$( echo ${bucks[$num_sel]} )"
+bucket="$( echo ${dirs[$num_sel]} )"
 bucket_lower="$( echo $bucket | tr "[:upper:]" "[:lower:]" )"
 bucket_clean="$( echo $bucket_lower | sed s'|s3://||' )"
 
@@ -72,45 +74,62 @@ GetYN
 num2=0
 if [ $result -eq 1 ]; then
 	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
-	#CLOUDSDK_CONFIG=$CONFIG_FOLDER 
-	BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean
+	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
+	echo "BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean"
 else
 	exit
 fi
 
 echo -e "\nHere are the files to upload: "
 
-readarray -t dirs <<< "$( $s3cmd ls $bucket | sed 's/.*s3:/s3:/' )"
-for dir in "${dirs[@]}" ; do
-	if [ $num2 -eq 0 ]; then
-		echo "0 - $dir"
-                num2=$((num2+1))
-	else
-		echo "$num2 - $dir"
-		num2=$((num2+1))
-	fi
-done
+S3_List $bucket
 
-read -p "Either type A for all files, or select a number to select a subdir: " up_sel
+read -p "Either type A for all files, or select a number to drill down into a subdir: " up_sel
 
-if [ "$up_sel" == "A" ]; then 
-	echo "upload it all!"
-	#CLOUDSDK_CONFIG=$CONFIG_FOLDER 
-	BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log
+if [ "$up_sel" == "A" ]; then
+	echo "upload it all BABY!"
+	for dir in "${dirs[@]}"; do
+		#CLOUDSDK_CONFIG=$CONFIG_FOLDER
+		sub_dir=$dir
+         	sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+		sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
+		mkdir -p $log_dir/$sub_dir_clean
+		#echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"i
+		echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
+	done
 else
-		
+	sub_dir=${dirs[$up_sel]}
+	echo "The list of files inside $sub_dir is:"
+	S3_List $sub_dir
+	echo "Would you like to upload these files?"
+	result=0
+	GetYN
+	if [ $result=1 ]; then
+		for dir in "${dirs[@]}" ; do
+			sub_dir=$dir
+			sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
+			sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
+			mkdir -p $log_dir/$sub_dir_clean
+			echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
+		done
+	else
+		echo "gtfo then!"
+		exit
+	fi
+			 
+fi	
+
+
+
 
 
 #	echo "Uploading ${dirs[$up_sel]}...."
 #	dir_clean="$( echo ${bucks[$num_sel]} | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
-#	#CLOUDSDK_CONFIG=$CONFIG_FOLDER 
+#	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
 #	BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r ${dirs[$up_sel]} gs://broad-ecs-$dir_clean
 #fi
-
-
 
 
 #if [ $result -eq 1 ]; then
 #	echo "CLOUDSDK_CONFIG=$CONFIG_FOLDER BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket gs://broad-ecs-$dir/"
 #fi
-
