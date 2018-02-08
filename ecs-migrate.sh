@@ -57,7 +57,7 @@ Upload(){
         sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
         echo "mkdir -p $log_dir/$sub_dir_clean"
         #echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"i
-        echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log"
+        echo "nohup BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log &"
     done
 }
 
@@ -92,7 +92,7 @@ num2=0
 if [ $result -eq 1 ]; then
 	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
 	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
-	echo "BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean"
+	BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean
 else
 	exit
 fi
