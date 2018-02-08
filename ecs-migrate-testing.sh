@@ -44,8 +44,15 @@ S3_List(){
     		num=$((num+1))
     	fi
     done
-    return $dirs
 }
 
-S3_List
-echo "Array is $dirs"
+dirs=$(S3_List)
+for dir in "${dirs[@]}" ; do
+    if [ $num -eq 0 ]; then
+        echo "0 - $dir"
+                num=$((num+1))
+    else
+        echo "$num - $dir"
+        num=$((num+1))
+    fi
+done
