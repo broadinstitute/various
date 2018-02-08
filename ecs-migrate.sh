@@ -3,6 +3,7 @@
 #Defineables
 #Threads non working right now
 threads=8
+multithread=''
 
 #These shouldnt change
 log_dir="/broad/stops/ecs-migration/logs"
@@ -54,10 +55,10 @@ Upload(){
         #CLOUDSDK_CONFIG=$CONFIG_FOLDER
         sub_dir=$dir
         sub_dir_clean="$( echo $sub_dir | tr "[:upper:]" "[:lower:]" | sed s'|s3://||' )"
-        sub_dir_log_path="$( echo $sub_dir_clean | sed 's:/*$::' )"
-        echo "mkdir -p $log_dir/$sub_dir_clean"
-        #echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"i
-        echo "nohup BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $dir gs://broad-ecs-$sub_dir_clean $> $log_dir/$sub_dir_log_path.log &"
+        mkdir -p $log_dir/$sub_dir_clean
+        #echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"
+	echo "Running sync of $dir to gs://broad-ecs-$sub_dir_clean"
+        BOTO_CONFIG=$BOTOFILE $gsutil $multithread rsync -r $dir gs://broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &
     done
 }
 
@@ -90,7 +91,7 @@ GetYN
 #Makes a bucket in gsutil with the same name as in ECS but lowercase
 num2=0
 if [ $result -eq 1 ]; then
-	echo -e "Making bucket (Will be converted to lowercase if needed) ...."
+	echo -e "Making bucket (Will be converted to lowercase) ...."
 	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
 	BOTO_CONFIG=$BOTOFILE $gsutil -q mb -c coldline -p $project gs://broad-ecs-$bucket_clean
 else
