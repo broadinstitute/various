@@ -46,13 +46,5 @@ S3_List(){
     done
 }
 
-dirs=$(S3_List)
-for dir in "${dirs[@]}" ; do
-    if [ $num -eq 0 ]; then
-        echo "0 - $dir"
-                num=$((num+1))
-    else
-        echo "$num - $dir"
-        num=$((num+1))
-    fi
-done
+S3_List
+printf '%s\n' "${dirs[@]}"
