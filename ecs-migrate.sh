@@ -43,9 +43,13 @@ S3_List(){
     		echo "0 - $dir"
                     num=$((num+1))
     	else
-    		echo "$num - $dir"
-    		num=$((num+1))
-    	fi
+    		if [[ $dir == $1 ]]; then 
+			echo "This path: $dir is the same as:  $1 something might be wrong..."
+		else 
+			echo "$num - $dir"
+    			num=$((num+1))
+    		fi
+	fi
     done
 }
 
@@ -115,10 +119,10 @@ else
 	echo "Would you like to upload these files?"
 	result=0
 	GetYN
-	if [ $result=1 ]; then
+	if [ $result -eq 1 ]; then
 		#Drill down one level and do the same as above
 		Upload $dirs
-	else
+	elif [ $result -eq 0 ]; then
 		echo "exiting"
 		exit
 	fi
