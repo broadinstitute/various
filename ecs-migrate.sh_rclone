@@ -9,7 +9,7 @@ s3cmd='/home/unix/daltschu/git/archive-cli/s3cmd/s3cmd -c /home/unix/daltschu/gi
 project='broad-archive-legacy'
 gsutil='/home/unix/daltschu/google-cloud-sdk/bin/gsutil'
 bucket=
-config_file='/home/unix/daltschu/.config/rclone/.rclone.conf'
+config_file='/home/unix/daltschu/.config/rclone/rclone.conf'
 
 #Location of boto file that contains credentials for ecs and google.
 BOTOFILE=/broad/stops/ecs-migration/.boto_ecs
@@ -58,7 +58,7 @@ Upload(){
         #echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"
 	echo "Running sync of $dir to gs://broad-ecs-$sub_dir_clean"
         #BOTO_CONFIG=$BOTOFILE $gsutil $multithread rsync -r $dir gs://broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &
-    	rclone copy --transfers $threads ecs:$dir gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &
+    	rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &
 	done
 }
 
