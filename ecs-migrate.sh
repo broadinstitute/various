@@ -42,9 +42,10 @@ S3_List(){
     	if [ $num -eq 0 ]; then
     		echo "0 - $dir"
                     num=$((num+1))
-    	else
+    	else	
+		#Fix some weird listing bug
     		if [[ $dir == $1 ]]; then 
-			echo "This path: $dir is the same as:  $1 something might be wrong..."
+			unset dirs[$num]
 		else 
 			echo "$num - $dir"
     			num=$((num+1))
