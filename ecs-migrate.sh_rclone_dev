@@ -36,17 +36,25 @@ GetYN() {
 
 #Lists directories in an s3 path
 S3_List(){
+if [ $range == 1 ] ; then
+    first="$( echo $up_sel | cut -d '-' -f 1 )"
+	last="$( echo $up_sel | cut -d '-' -f 2 )"
+	for ((i=$first;i<=$last;i++)); do
+    	echo "I is: $i"
+    done
+else
     num=0
     readarray -t dirs <<< "$( $s3cmd ls $1 | sed 's/.*s3:/s3:/' )"
-    for dir in "${dirs[@]}" ; do
-    	if [ $num -eq 0 ]; then
-    		echo "0 - $dir"
-                    num=$((num+1))
-    	else
-    		echo "$num - $dir"
-    		num=$((num+1))
-    	fi
-    done
+        for dir in "${dirs[@]}" ; do
+    	       if [ $num -eq 0 ]; then
+    		             echo "0 - $dir"
+                         num=$((num+1))
+    	       else
+    		             echo "$num - $dir"
+    		                   num=$((num+1))
+                fi
+        done
+fi
 }
 
 #loops directories in the array returned from S3_List, then uploads each one.
@@ -123,7 +131,7 @@ elif [[ "$up_sel" =~ $regex ]]; then
 	echo "The range of files is $up_sel"
 	S3_List $up_sel $range $dirs
 
-else	
+else
 	sub_dir=${dirs[$up_sel]}
 	echo "The list of files inside $sub_dir is:"
 	S3_List $sub_dir
