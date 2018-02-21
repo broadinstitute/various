@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Defineables
-threads=100
+threads=20
 
 #These shouldnt change
 log_dir="/broad/stops/ecs-migration/logs"
@@ -36,11 +36,11 @@ GetYN() {
 
 #Lists directories in an s3 path
 S3_List(){
-if [ $range == 1 ] ; then
+if [ "$range" == 1 ] ; then
     first="$( echo $up_sel | cut -d '-' -f 1 )"
 	last="$( echo $up_sel | cut -d '-' -f 2 )"
 	for ((i=$first;i<=$last;i++)); do
-    	echo "I is: $i"
+    	echo "$i: ${dirs[$i]}"
     done
 else
     num=0
@@ -59,11 +59,15 @@ fi
 
 #loops directories in the array returned from S3_List, then uploads each one.
 Upload(){
-if [ $range == 1 ] ; then
+if [ "$range" == 1 ] ; then
 	first="$( echo $up_sel | cut -d '-' -f 1 )"
 	last="$( echo $up_sel | cut -d '-' -f 2 )"
 	for ((i=$first;i<=$last;i++)); do
-		echo "I is: $i"
+		echo "Uploading - ${dirs[$i]}"
+		sub_dir=${dirs[$i]}
+		sub_dir_clean="$( echo $sub_dir | sed s'|s3://||' )"
+		mkdir -p $log_dir/$sub_dir_clean
+		echo "rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &"
 	done
 	else for dir in "${dirs[@]}"; do
       	 	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
@@ -118,7 +122,7 @@ GetYN
 echo -e "\nHere are the files to upload: "
 S3_List $bucket
 
-read -p "Either type A for all files, or select a number to drill down into a subdir: " up_sel
+read -p "Either type A for all files, or select a range of directories to upload (4-12), or drill down into a subdir: " up_sel
 
 regex='^(([0-9]+)-([0-9]+))$'
 
@@ -130,6 +134,12 @@ elif [[ "$up_sel" =~ $regex ]]; then
 	range=1
 	echo "The range of files is $up_sel"
 	S3_List $up_sel $range $dirs
+	echo "Would you like to upload these files?"
+	result=0
+	GetYN
+	if [ "$result" == 1 ]; then
+		Upload $up_sel $range $dirs
+	fi
 
 else
 	sub_dir=${dirs[$up_sel]}
@@ -138,10 +148,10 @@ else
 	echo "Would you like to upload these files?"
 	result=0
 	GetYN
-	if [ $result == 1 ]; then
+	if [ "$result" == 1 ]; then
 		#Drill down one level and do the same as above
 		Upload $dirs
-	elif [ $result == 0 ]; then
+	elif [ "$result" == 0 ]; then
 		echo "exiting"
 		exit
 	fi
