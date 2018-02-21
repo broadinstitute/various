@@ -66,18 +66,20 @@ if [ "$range" == 1 ] ; then
 		echo "Uploading - ${dirs[$i]}"
 		sub_dir=${dirs[$i]}
 		sub_dir_clean="$( echo $sub_dir | sed s'|s3://||' )"
+		sub_dir_log="$( echo $sub_dir_clean | sed 's:/*$::' )"
 		mkdir -p $log_dir/$sub_dir_clean
-		echo "rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &"
+		rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_log/upload.log &
 	done
 	else for dir in "${dirs[@]}"; do
       	 	#CLOUDSDK_CONFIG=$CONFIG_FOLDER
        		sub_dir=$dir
         	sub_dir_clean="$( echo $sub_dir | sed s'|s3://||' )"
+		sub_dir_log="$( echo $sub_dir_clean | sed 's:/*$::' )"
         	mkdir -p $log_dir/$sub_dir_clean
         	#echo "BOTO_CONFIG=$BOTOFILE $gsutil -m rsync -r $bucket_lower gs://broad-ecs-$bucket_clean &> $log_dir/$bucket_clean.log"
 		echo "Running sync of $dir to gs://broad-ecs-$sub_dir_clean"
         	#BOTO_CONFIG=$BOTOFILE $gsutil $multithread rsync -r $dir gs://broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &
-    		echo "rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_clean/upload.log &"
+    		rclone copy -v --config $config_file --transfers $threads ecs:$sub_dir_clean gcs:broad-ecs-$sub_dir_clean &> $log_dir/$sub_dir_log/upload.log &
 		done
 fi
 }
